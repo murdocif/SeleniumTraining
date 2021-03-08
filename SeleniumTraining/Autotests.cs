@@ -29,7 +29,7 @@ namespace SeleniumTraining
             if (driver.FindElements(By.Name("query")).Count == 0)
             {
                 driver.FindElement(By.Name("username"), 1000).SendKeys("testadmin");
-                driver.FindElement(By.Name("password"), 1000).SendKeys("R8MRDAYT_test" + Keys.Enter);
+                driver.FindElement(By.Name("password"), 1000).SendKeys("testadmin" + Keys.Enter);
             }
 
             wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
