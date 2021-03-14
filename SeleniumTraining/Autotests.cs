@@ -4,6 +4,8 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System;
 using System.Threading;
+using SeleniumExtras.WaitHelpers;
+using OpenQA.Selenium.Interactions;
 
 namespace SeleniumTraining
 {
@@ -52,14 +54,71 @@ namespace SeleniumTraining
         [TestMethod]
         public void Homework2()
         {
+            int itemQty = 3;
+            AddRandomPopularItemToCart(itemQty);
 
+            Assert.AreEqual(itemQty.ToString(), driver.FindElement(By.CssSelector("#cart .badge.quantity"), 2000).Text);
+                        
+            driver.FindElement(By.CssSelector("#cart")).Click();
+            driver.FindElement(By.Id("box-checkout-cart"), 2000);
+
+            var count = driver.FindElements(By.Name("remove_cart_item")).Count;
+
+            while (count > 0)
+            {
+                driver.FindElement(By.Name("remove_cart_item"), 5000).Click();
+                wait.Until(ExpectedConditions.StalenessOf(driver.FindElement(By.ClassName("loader"), 2000)));
+                count--;
+            }            
+
+            wait.Until(ExpectedConditions.TextToBePresentInElementLocated(By.CssSelector("#box-checkout p"), "There are no items in your cart."));
+            driver.FindElement(By.CssSelector("#box-checkout .btn.btn-default"), 2000).Click();
+            Assert.AreEqual("", driver.FindElement(By.CssSelector("#cart .badge.quantity"), 2000).Text);
         }
+
 
         [TestCleanup]
         public void TearDown()
         {
             driver.Close();
             driver.Dispose();
+        }
+
+        public void AddRandomPopularItemToCart(int itemQty)
+        {
+            for (int i = 0; i < itemQty; i++)
+            {
+                driver.Navigate().GoToUrl("http://158.101.173.161");
+                int qty;
+
+                var currentQtyInCart = driver.FindElement(By.CssSelector("#cart .badge.quantity"), 2000).Text;
+
+                if (string.IsNullOrEmpty(currentQtyInCart))
+                {
+                    qty = 0;
+                }
+                else
+                {
+                    qty = Int32.Parse(currentQtyInCart);
+                }
+
+                var count = driver.FindElements(By.CssSelector("#box-popular-products > .listing.products > .product-column")).Count;
+                Random rnd = new Random();
+                int a = rnd.Next(1, count);
+                driver.FindElement(By.Id("box-popular-products")).FindElement(By.CssSelector($"#box-popular-products > .listing.products > .product-column:nth-child({a})")).Click();
+                IJavaScriptExecutor js = (IJavaScriptExecutor)driver;
+                _ = (string)js.ExecuteScript("arguments[0].scrollIntoView(true);", driver.FindElement(By.Name("add_cart_product")));
+
+                wait = new WebDriverWait(driver, TimeSpan.FromMilliseconds(5000));
+
+                Actions actions = new Actions(driver);
+                var elementLocator = driver.FindElement(By.Name("add_cart_product"), 2000);
+                actions.Click(elementLocator).Perform();
+
+                _ = (string)js.ExecuteScript("arguments[0].scrollIntoView(true);", driver.FindElement(By.CssSelector("#cart"), 2000));
+
+                _ = wait.Until(ExpectedConditions.TextToBePresentInElementLocated(By.CssSelector("#cart .badge.quantity"), (qty + 1).ToString()));
+            }            
         }
     }
 }
